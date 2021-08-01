@@ -1,0 +1,57 @@
+#!/bin/bash
+
+usage() { echo "Usage: $0 -k <app key> -u <app user> -w <workspace> [-t <target directory>] [-p <project>]" 1>&2; exit 1; }
+
+while getopts t:k:u:w:p: flag
+do
+    case "${flag}" in
+        t) TARGET_DIR=${OPTARG};;
+        k) APP_KEY=${OPTARG};;
+        u) APP_USER=${OPTARG};;
+        w) WORKSPACE=${OPTARG};;
+        p) PROJECT=${OPTARG};;
+        *) usage;;
+    esac
+done
+
+if [ -z "${TARGET_DIR}" ] || [ -z "${APP_KEY}" ] || [ -z "${APP_USER}" ] || [ -z "${WORKSPACE}" ]; then
+  usage
+fi
+
+cd "${TARGET_DIR}" || exit
+
+BASE_URL="https://api.bitbucket.org/2.0/repositories/${WORKSPACE}"
+NEXT_URL=${BASE_URL}
+AUTH="Authorization: Basic $(echo -n "${APP_USER}:${APP_KEY}" | base64)"
+
+while : ; do
+    printf "get repositories from %s ...\n" "${NEXT_URL}"
+    REPOSITORIES=$(curl --silent --location --request GET "${NEXT_URL}" --header "${AUTH}")
+    NEXT_URL=$(echo "${REPOSITORIES}" | jq -r ".next")
+
+    readarray -t VALUES < <(echo "${REPOSITORIES}" |  jq -c '.values[]')
+    for item in "${VALUES[@]}"; do
+      REPO_NAME=$(jq -r '.name' <<< "$item")
+      REPO_PROJECT=$(jq -r '.project.name' <<< "$item")
+
+      if [ -z "${PROJECT}" ] || [ "${REPO_PROJECT}" == "${PROJECT}" ] ; then
+
+        REPO_URL=$(jq -r '.links.clone[1].href' <<< "$item")
+        REPO_DIR=$(echo "${REPO_URL}" | sed 's%^.*/\([^/]*\)\.git$%\1%g')
+
+        if [ ! -d "${REPO_DIR}" ]; then
+          printf "clone %s/%s ...\n"  "${REPO_PROJECT}" "${REPO_NAME}"
+          git clone "${REPO_URL}"
+        fi
+
+        printf "remote update %s/%s\n"  "${REPO_PROJECT}" "${REPO_NAME}"
+        cd "${REPO_DIR}" || return
+        git remote update
+        cd ..
+      else
+        printf "skip %s/%s\n"  "${REPO_PROJECT}" "${REPO_NAME}"
+      fi
+    done
+
+    [[ ${NEXT_URL} != "null" ]] || break
+done
