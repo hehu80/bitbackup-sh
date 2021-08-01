@@ -2,6 +2,8 @@
 
 usage() { echo "Usage: $0 -k <app key> -u <app user> -w <workspace> [-t <target directory>] [-p <project>]" 1>&2; exit 1; }
 
+TARGET_DIR="."
+
 while getopts t:k:u:w:p: flag
 do
     case "${flag}" in
