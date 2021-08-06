@@ -1,9 +1,9 @@
 # Bitbackup
 
 ## Description
-This bash script will download all of your Git repositories from a Bitbucket workspace.
-If a repository does not exist locally the repo will be cloned to the target directory. If a
-repository already exists locally, `git remote update` will be run.
+This Bash script will download all of your Git repositories from a Bitbucket workspace.
+If a repository does not exist locally, the repo will be downloaded to the target directory. If a
+repository already exists locally, `git remote update` will be executed.
 
 
 ## Usage
