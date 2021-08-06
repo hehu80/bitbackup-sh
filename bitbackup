@@ -44,12 +44,13 @@ while : ; do
         if [ ! -d "${REPO_DIR}" ]; then
           printf "clone %s/%s ...\n"  "${REPO_PROJECT}" "${REPO_NAME}"
           git clone "${REPO_URL}"
+        else
+          printf "remote update %s/%s\n"  "${REPO_PROJECT}" "${REPO_NAME}"
+          cd "${REPO_DIR}" || return
+          git remote update
+          cd ..
         fi
 
-        printf "remote update %s/%s\n"  "${REPO_PROJECT}" "${REPO_NAME}"
-        cd "${REPO_DIR}" || return
-        git remote update
-        cd ..
       else
         printf "skip %s/%s\n"  "${REPO_PROJECT}" "${REPO_NAME}"
       fi
